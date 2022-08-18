@@ -26,62 +26,64 @@ $script:accessToken = (Invoke-RestMethod $url -Method 'POST' -Headers $headers -
 
 Connect-AzAccount -Identity
 
-# Graph URL to use
-$AzureAD_Devices_URL = "https://graph.microsoft.com/beta/Devices"
-$Intune_Devices_URL = "https://graph.microsoft.com/beta/deviceManagement/managedDevices"
-$Monitor_Devices_URL = "https://graph.microsoft.com/beta/deviceManagement/autopilotEvents"
-
 $headers = @{'Authorization'="Bearer " + $accessToken}
 
-# Get information from Autopilot devices part
-$autopilotEvents_info = Invoke-WebRequest -Uri $Monitor_Devices_URL -Method GET -Headers $Headers -UseBasicParsing 
-$Get_autopilotEvents = ($autopilotEvents_info.Content | ConvertFrom-Json).value
+$Monitor_Devices_URL = "https://graph.microsoft.com/beta/deviceManagement/autopilotEvents"
 
-# Get information from Intune part
-$Get_DevicesFromIntune_info = Invoke-WebRequest -Uri $Intune_Devices_URL -Method GET -Headers $Headers -UseBasicParsing 
-$Get_DevicesFromIntune_JsonResponse = ($Get_DevicesFromIntune_info.Content | ConvertFrom-Json).value
-
-# Get information from Azure AD part
-$Get_DevicesFromAz_info = Invoke-WebRequest -Uri $AzureAD_Devices_URL -Method GET -Headers $Headers -UseBasicParsing 
-$Get_DevicesFromAz_JsonResponse = ($Get_DevicesFromAz_info.Content | ConvertFrom-Json).value
-
-<#
-In the next part we will:
-1. List all devices from the autopilot devices part
-2. Get the approriate serial number
-3. Get the appropriate ID from Intune part using the serial number
-4. Get the appropriate ID from Azure part using the intune device ID
-#>
-
-# Add automatically all devices from autopilot monitoring part
-# $AutopilotEvents = $Get_autopilotEvents
-
-# Devices added during last 3 hours
-$AutopilotEvents = $Get_autopilotEvents | where {((Get-Date).Addhours(-3) -lt $_.deploymentEndDateTime)}
-
-# Devices added during last 1 days
-# $AutopilotEvents = $Get_autopilotEvents | where {((Get-Date).Adddays(-1) -lt $_.deploymentEndDateTime)}
-
-$AutopilotEvents.deploymentEndDateTime
-ForEach($Monitor_Device in $AutopilotEvents)
-	{
-		If($Monitor_Device.deploymentEndDateTime -ne $null)
-			{
-				$deviceId = $Monitor_Device.deviceId	
-				$SerialNumber = $Monitor_Device.deviceSerialNumber				
-
-				$Get_Device_azureADDeviceId = ($Get_DevicesFromIntune_JsonResponse | where {$_.serialNumber -eq $SerialNumber}).azureADDeviceId				
-				$Device_ObjectID = ($Get_DevicesFromAz_JsonResponse | where {$_.deviceId -eq $Get_Device_azureADDeviceId}).ID
-
-				$Get_Group_Members = (Get-AzADGroupMember -GroupObjectId $Deployment_Completed_Group_ID) | where {$_.ID -eq $Device_ObjectID}
-				If($Get_Group_Members -eq $null)
-					{
-						Add-AzADGroupMember -TargetGroupObjectId $Deployment_Completed_Group_ID -MemberObjectId $Device_ObjectID		
-						"device added: $Device_ObjectID"
+do {
+	# Get information from Autopilot devices part
+	try{
+		$autopilotEvents_info = Invoke-RestMethod -Uri $Monitor_Devices_URL -Method GET -Headers $headers
+		$Get_autopilotEvents = $autopilotEvents_info.value
+		$NextLinkAP = $autopilotEvents_info.'@odata.nextLink'
+		$AutopilotEvents = $Get_autopilotEvents
+		# Devices added during last 3 hours
+        	# $AutopilotEvents = $Get_autopilotEvents | where {((Get-Date).Addhours(-3) -lt $_.deploymentEndDateTime)}
+        	# Devices added during last 1 days
+        	# $AutopilotEvents = $Get_autopilotEvents | where {((Get-Date).Adddays(-1) -lt $_.deploymentEndDateTime)}
+		ForEach($Monitor_Device in $AutopilotEvents){
+			If($null -ne $Monitor_Device.deploymentEndDateTime){
+				$SerialNumber = $Monitor_Device.deviceSerialNumber
+				If($null -ne $SerialNumber){
+					try{
+						$Intune_Devices_URL = "https://graph.microsoft.com/beta/deviceManagement/managedDevices?`$filter=serialNumber eq '" + ($SerialNumber -replace '\s','') +"'"
+						$Get_DeviceFromIntune_info = Invoke-RestMethod -Uri $Intune_Devices_URL -Method GET -Headers $headers
+						ForEach($Get_Device_azureADDeviceId in $Get_DeviceFromIntune_info.Value){
+							$Get_Device_azureADDeviceId = $Get_Device_azureADDeviceId.azureADDeviceId
+							try{ 
+								$AzureAD_Devices_URL ="https://graph.microsoft.com/beta/Devices?`$filter=deviceId eq '" + $Get_Device_azureADDeviceId + "'"
+								$Get_DevicesFromAz_info = Invoke-RestMethod -Uri $AzureAD_Devices_URL -Method GET -Headers $headers
+								$Device_ObjectID = $Get_DevicesFromAz_info.Value.id
+								If($null -ne $Device_ObjectID){
+									$Get_Group_Members = Get-AzADGroupMember -GroupObjectId $Deployment_Completed_Group_ID | Where-Object {$_.id -eq $Device_ObjectID}
+									If($null -eq $Get_Group_Members){
+											try {
+												Add-AzADGroupMember -TargetGroupObjectId $Deployment_Completed_Group_ID -MemberObjectId $Device_ObjectID
+												"device added: $Device_ObjectID"
+											} catch {
+												Write-Output ("Failed to Add-AzADGroupMember")
+											}
+									} else {
+											"device already exists: " + $Get_DevicesFromAz_info.Value.DisplayName + " Serial Number: " + $SerialNumber
+									}
+								} else {
+									Write-Output ("Device_ObjectID is null")
+								}
+							} catch {
+								Write-Output  ("Failed to Get information from Azure AD")
+							}
+						}
+					} catch {
+						Write-Output  ("Failed to Get information from Intune")
 					}
-				Else
-					{
-						"device already exists: $Device_ObjectID"
-					}	
-			}			
-	}                    
+				} else {
+					"Failed deployment for DeviceId: " + $Monitor_Device.deviceId + " userPrincipalName: " + $Monitor_Device.userPrincipalName
+				}
+			} else {
+				Write-Output ("deploymentEndDateTime was null")
+			}
+		}
+	} catch {
+		Write-Output  ("Failed getting Autopilot events")
+	}
+} while ($null -ne $NextLinkAP)
