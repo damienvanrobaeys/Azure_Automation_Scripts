@@ -40,7 +40,7 @@ $Message = " devices in Autopilot older than > 180 days"
 $Button_Text = "Click here to see the list"
 $Color = "2874A6"
 $CSV_Name = "Obsolete_Autopilot.csv"
-$CSV_Path = "https://grtgaz.sharepoint.com/sites/DWP-Support/Documents%20partages/Windows/Logs/$CSV_Name"
+$CSV_Path = ""
 #*****************************************************************
 
 <#
@@ -68,26 +68,36 @@ $headers = @{'Authorization'="Bearer " + $accessToken}
 $Autopilot_URL = "https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities"
 
 $autopilotEvents_info = Invoke-WebRequest -Uri $Autopilot_URL -Method GET -Headers $Headers -UseBasicParsing 
-$Get_autopilotEvents = ($autopilotEvents_info.Content | ConvertFrom-Json).value
-$Not_Enrolled_Devices = $Get_autopilotEvents | where {$_.enrollmentState -ne "enrolled"}
+$Get_autopilotEvents_JsonResponse = ($autopilotEvents_info.Content | ConvertFrom-Json)
+$Get_autopilotEvents = $Get_autopilotEvents_JsonResponse.value | where {$_.enrollmentState -ne "enrolled"}
+
+If($Get_autopilotEvents_JsonResponse.'@odata.nextLink')
+{
+    do {
+        $URL = $Get_autopilotEvents_JsonResponse.'@odata.nextLink'
+        $autopilotEvents_info = Invoke-WebRequest -Uri $URL -Method GET -Headers $Headers -UseBasicParsing 
+        $Get_autopilotEvents_JsonResponse = ($autopilotEvents_info.Content | ConvertFrom-Json)
+        $Get_autopilotEvents += $Get_autopilotEvents_JsonResponse.value
+    } until ($null -eq $Get_autopilotEvents_JsonResponse.'@odata.nextLink')
+}
 
 $Devices_Array = @()
-
-# Get all devices from Autopilot part
-ForEach($Monitor_Device in $Not_Enrolled_Devices)
-	{
-		$Azure_ID_from_Autopilot = $Monitor_Device.azureAdDeviceId
+ForEach($Detail in $Get_autopilotEvents)
+    {
+		$Azure_ID_from_Autopilot = $Detail.azureAdDeviceId
 		$Azure_URL_From_AzureID = "https://graph.microsoft.com/v1.0/devices?`$filter=deviceId eq '$Azure_ID_from_Autopilot'"				
 		$Get_Azure_Devices_info = Invoke-WebRequest -Uri $Azure_URL_From_AzureID -Method GET -Headers $Headers -UseBasicParsing
 		$Get_Azure_Devices_JsonResponse = ($Get_Azure_Devices_info.Content | ConvertFrom-Json).value
 		$Devices_to_reregister = $Get_Azure_Devices_JsonResponse | where {((Get-Date).Adddays(-180) -gt $_.createdDateTime)}
+
 		$DisplayName = $Devices_to_reregister.displayName
 		$createdDateTime = $Devices_to_reregister.createdDateTime
-		$Device_SN = $Monitor_Device.serialNumber
-		$Device_model = $Monitor_Device.model
-		$Device_systemFamily = $Monitor_Device.systemFamily
-		$Device_groupTag = $Monitor_Device.groupTag
-		$Device_deploymentProfileAssignedDateTime = $Monitor_Device.deploymentProfileAssignedDateTime
+
+		$Device_SN = $Detail.serialNumber
+		$Device_model = $Detail.model
+		$Device_systemFamily = $Detail.systemFamily
+		$Device_groupTag = $Detail.groupTag
+		$Device_deploymentProfileAssignedDateTime = $Detail.deploymentProfileAssignedDateTime
 
 		$Obj = New-Object PSObject
 		Add-Member -InputObject $Obj -MemberType NoteProperty -Name "SN" -Value $Device_SN
@@ -95,9 +105,9 @@ ForEach($Monitor_Device in $Not_Enrolled_Devices)
 		Add-Member -InputObject $Obj -MemberType NoteProperty -Name "createdDateTime" -Value $createdDateTime	
 		Add-Member -InputObject $Obj -MemberType NoteProperty -Name "Model family name" -Value $Device_systemFamily	
 		Add-Member -InputObject $Obj -MemberType NoteProperty -Name "Model" -Value $Device_model	
-		$Devices_Array += $Obj			
-	}  
-	
+		$Devices_Array += $Obj		
+    } 
+
 $Devices_Count = $Devices_Array.count
 $NewFile = New-Item -ItemType File -Name $CSV_Name
 $Devices_Array | select * | export-csv $CSV_Name -notype -Delimiter ";"
@@ -134,3 +144,4 @@ $body = @"
 "@
 
 Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType 'application/json'
+
