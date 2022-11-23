@@ -77,7 +77,7 @@ If($Get_autopilotEvents_JsonResponse.'@odata.nextLink')
         $URL = $Get_autopilotEvents_JsonResponse.'@odata.nextLink'
         $autopilotEvents_info = Invoke-WebRequest -Uri $URL -Method GET -Headers $Headers -UseBasicParsing 
         $Get_autopilotEvents_JsonResponse = ($autopilotEvents_info.Content | ConvertFrom-Json)
-        $Get_autopilotEvents += $Get_autopilotEvents_JsonResponse.value
+        $Get_autopilotEvents += $Get_autopilotEvents_JsonResponse.value | where {$_.enrollmentState -ne "enrolled"}
     } until ($null -eq $Get_autopilotEvents_JsonResponse.'@odata.nextLink')
 }
 
@@ -144,4 +144,3 @@ $body = @"
 "@
 
 Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType 'application/json'
-
