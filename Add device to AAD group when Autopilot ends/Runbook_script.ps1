@@ -58,6 +58,7 @@ In the next part we will:
 # Get Autopilot devices added during last 1 days
 $AutopilotEvents = $Get_autopilotEvents | where {((Get-Date).Adddays(-1) -lt $_.deploymentEndDateTime)}
 
+
 # Get all devices from Autopilot part
 ForEach($Monitor_Device in $AutopilotEvents)
 	{
@@ -65,31 +66,42 @@ ForEach($Monitor_Device in $AutopilotEvents)
 			{
 				$deviceId = $Monitor_Device.deviceId	
 				$SerialNumber = $Monitor_Device.deviceSerialNumber	
-
 				# Get Intune device ID from Intune using the serial numberprovided by Autopilot
 				$Devices_URL_FromSN = 'https://graph.microsoft.com/beta/deviceManagement/managedDevices?$filter' + "=contains(serialNumber,'$SerialNumber')"
 				$Get_Intune_Devices_info = Invoke-WebRequest -Uri $Devices_URL_FromSN -Method GET -Headers $Headers -UseBasicParsing 
 				$Get_Intune_Devices_JsonResponse = ($Get_Intune_Devices_info.Content | ConvertFrom-Json).value
-				$Get_Device_azureADDeviceId = $Get_Intune_Devices_JsonResponse.azureADDeviceId                             
-
-				# Get the Azure AD Object ID of the device using the azureADDeviceId provided just before 
-				$Azure_URL_From_AzureID = "https://graph.microsoft.com/v1.0/devices?`$filter=deviceId eq '$Get_Device_azureADDeviceId'"				
-				$Get_Azure_Devices_info = Invoke-WebRequest -Uri $Azure_URL_From_AzureID -Method GET -Headers $Headers -UseBasicParsing
-				$Get_Azure_Devices_JsonResponse = ($Get_Azure_Devices_info.Content | ConvertFrom-Json).value
-				$Device_ObjectID = $Get_Azure_Devices_JsonResponse.id
-
-				# Check if the device is already in the group using the Object ID
-				$Get_Group_Members = (Get-AzADGroupMember -GroupObjectId $Deployment_Completed_Group_ID) | where {$_.id -eq $Device_ObjectID}
-				If($Get_Group_Members -eq $null)
-					{
-						# The device is not in the group so we will add it
-						Add-AzADGroupMember -TargetGroupObjectId $Deployment_Completed_Group_ID -MemberObjectId $Device_ObjectID		
-						"The device has been added in the group: $Device_ObjectID"
-					}
-				Else
-					{
-						# The device is already in the group
-						"The device already exists in the group: $Device_ObjectID"
-					}	
+                ForEach($Device in $Get_Intune_Devices_JsonResponse)
+                {
+                    $AAD_ID = $Device.azureADDeviceId 
+                    $AzureAD_Device_URL = "https://graph.microsoft.com/v1.0/devices?`$filter=deviceId eq '$AAD_ID'"		
+                    $Get_AAD_Device_Info = Invoke-WebRequest -Uri $AzureAD_Device_URL -Method GET -Headers $Headers -UseBasicParsing
+                    If($Get_AAD_Device_Info -ne $null)
+                        {
+                            $Get_AAD_Device_JsonResponse = ($Get_AAD_Device_Info.Content | ConvertFrom-Json).value	
+                            $Device_ObjectID = $Get_AAD_Device_JsonResponse.id  
+                            If($Device_ObjectID -ne $null)
+                                {
+                                    # Check if the device is already in the group using the Object ID
+                                    $Get_Group_Members = (Get-AzADGroupMember -GroupObjectId $Deployment_Completed_Group_ID) | where {$_.id -eq $Device_ObjectID}
+                                    If($Get_Group_Members -eq $null)
+                                        {
+                                            # The device is not in the group so we will add it
+                                            #Add-AzADGroupMember -TargetGroupObjectId $Deployment_Completed_Group_ID -MemberObjectId $Device_ObjectID		
+$URL = "https://graph.microsoft.com/v1.0/groups/$Deployment_Completed_Group_ID/members/`$ref"
+$GroupMember = @{
+	"@odata.id"="https://graph.microsoft.com/v1.0/devices/$Device_ObjectID"
+} | ConvertTo-Json
+Invoke-WebRequest -Method POST -Uri $URL -Headers $Headers -UseBasicParsing -Body $GroupMember -ContentType 'application/json'                                       
+                                            "The device has been added in the group: $Device_ObjectID"
+                                        }
+                                    Else
+                                        {
+                                            # The device is already in the group
+                                            "The device already exists in the group: $Device_ObjectID"
+                                        }	
+                                }
+                        }
+                }
 			}			
-	}   
+	}  
+
