@@ -53,11 +53,10 @@ In the next part we will:
 #>
 
 # Get Autopilot devices added during last 3 hours
-#$AutopilotEvents = $Get_autopilotEvents | where {((Get-Date).Addhours(-3) -lt $_.deploymentEndDateTime)}
+#$AutopilotEvents = $Get_autopilotEvents | where {(((Get-Date).Addhours(-3) -lt $_.deploymentEndDateTime) -and ($_.deploymentState -eq "success"))}
 
 # Get Autopilot devices added during last 1 days
-$AutopilotEvents = $Get_autopilotEvents | where {((Get-Date).Adddays(-1) -lt $_.deploymentEndDateTime)}
-
+$AutopilotEvents = $Get_autopilotEvents | where {(((Get-Date).Adddays(-1) -lt $_.deploymentEndDateTime) -and ($_.deploymentState -eq "success"))}
 
 # Get all devices from Autopilot part
 ForEach($Monitor_Device in $AutopilotEvents)
