@@ -64,10 +64,11 @@ ForEach($Monitor_Device in $AutopilotEvents)
 		If($Monitor_Device.deploymentEndDateTime -ne $null)
 			{
 				$deviceId = $Monitor_Device.deviceId	
-				$SerialNumber = $Monitor_Device.deviceSerialNumber	
+				$SerialNumber = $Monitor_Device.deviceSerialNumber
+    				$DeviceName = $Monitor_Device.managedDeviceName
 				# Get Intune device ID from Intune using the serial numberprovided by Autopilot
-				$Devices_URL_FromSN = 'https://graph.microsoft.com/beta/deviceManagement/managedDevices?$filter' + "=contains(serialNumber,'$SerialNumber')"
-				$Get_Intune_Devices_info = Invoke-WebRequest -Uri $Devices_URL_FromSN -Method GET -Headers $Headers -UseBasicParsing 
+				$Devices_URL = 'https://graph.microsoft.com/beta/deviceManagement/managedDevices?$filter' + "=contains(deviceName,'$DeviceName')"
+    				$Get_Intune_Devices_info = Invoke-WebRequest -Uri $Devices_URL -Method GET -Headers $Headers -UseBasicParsing 
 				$Get_Intune_Devices_JsonResponse = ($Get_Intune_Devices_info.Content | ConvertFrom-Json).value
                 ForEach($Device in $Get_Intune_Devices_JsonResponse)
                 {
