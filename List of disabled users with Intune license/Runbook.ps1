@@ -20,7 +20,7 @@ $Mail_To = ""
 
 # Teams webhoot link
 $Send_TeamsNotif = $True  # $True or $False
-$Webhook_URL = "https://grtgaz.webhook.office.com/webhookb2/50149506-37f4-471a-a130-73ca735d90c3@081c4a9c-ea86-468c-9b4c-30d99d63df76/IncomingWebhook/e25f6205be6644a2b983a2300424d551/dcd2dea7-7f2e-421c-8eeb-63e37d3071bb"
+$Webhook_URL = ""
 $Color = "2874A6"
 #*****************************************************************
 
