@@ -33,7 +33,7 @@ If($PS_Version -eq 7)
 		$Body_JSON = $PNPSigned_Drivers | ConvertTo-Json
 	}
 
-$Secure_header = @{message='Iam_a_bi_more_secure'}
+$Secure_header = @{message='Iam_a_bit_more_secure'}
 $response = Invoke-WebRequest -Method Post -Uri $webhookURI -Body $Body_JSON -UseBasicParsing -Headers $Secure_header  
 
 $StatusCode = $response.StatusCode
