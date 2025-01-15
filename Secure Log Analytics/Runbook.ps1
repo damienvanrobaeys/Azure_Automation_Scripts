@@ -9,7 +9,7 @@ If($WebHookData -eq "")
 		EXIT 
 	}
 
-If($WebhookData.RequestHeader.message -ne 'Iam_a_bi_more_secure')
+If($WebhookData.RequestHeader.message -ne 'Iam_a_bit_more_secure')
     {
         "RequestHeader not valid"
         EXIT
