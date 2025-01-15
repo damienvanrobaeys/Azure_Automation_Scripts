@@ -15,7 +15,7 @@ If($PS_Version -eq 7)
 		$Body_JSON = $Get_Services | ConvertTo-Json
 	}
 
-$Secure_header = @{message='Iam_a_bi_more_secure'}
+$Secure_header = @{message='Iam_a_bit_more_secure'}
 $webhookURI = ""
 $response = Invoke-WebRequest -Method Post -Uri $webhookURI -Body $Body_JSON -UseBasicParsing -Headers $Secure_header  
 
