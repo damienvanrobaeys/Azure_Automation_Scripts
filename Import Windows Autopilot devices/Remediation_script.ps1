@@ -20,7 +20,6 @@ $Folder_Location = ""
 If(!(test-path $Log_File)){new-item $Log_File -type file -force | out-null}
 
 # Getting hardware hash	
-$CompName = $env:computername
 $Get_SerialNumber = (gwmi win32_bios).SerialNumber
 $Hardware_Hash_File = "C:\Windows\Temp\$env:computername" + "_$Get_SerialNumber" + "_HardwareHash.txt"
 $Get_Hardware_Hash = (gwmi -Namespace root/cimv2/mdm/dmmap -Class MDM_DevDetail_Ext01 -Filter "InstanceID='Ext' AND ParentID='./DevDetail'").DeviceHardwareData
@@ -57,8 +56,7 @@ If($Is_Nuget_Installed -eq $True)
 			{ 
 				Try
 					{
-						Install-Module $Module_Name -Scope currentuser -Force -Confirm:$False -ErrorAction SilentlyContinue | out-null   
-						$Module_Version = (Get-Module $Module_Name -listavailable).version
+						Install-Module $Module_Name -Scope currentuser -Force -Confirm:$False -ErrorAction SilentlyContinue | out-null
 						$PnP_Module_Status = $True			
 						Write_Log -Message_Type "SUCCESS" -Message "Module PnP installed"					
 					}
@@ -105,15 +103,13 @@ If($PnP_Module_Status -eq $True)
 				Try
 					{
 						Add-PnPFile -Path $Hardware_Hash_File -Folder $Folder_Location #| out-null					
-						Write_Log -Message_Type "SUCCESS" -Message "Uploading file"		
-						$Upload_Status = $True						
+						Write_Log -Message_Type "SUCCESS" -Message "Uploading file"				
 					}
 				Catch
 					{
 						Write_Log -Message_Type "ERROR" -Message "Uploading file"
 						$Last_Error = $error[0]
-						Write_Log -Message_Type "ERROR" -Message "$Last_Error"						
-						$Upload_Status = $False												
+						Write_Log -Message_Type "ERROR" -Message "$Last_Error"										
 					}
 			}	
 	}	
