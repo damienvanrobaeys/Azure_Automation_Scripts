@@ -98,7 +98,7 @@ If($Send_Mail -eq $True)
     {
         If($Soon_Expired_Secret_Count -gt 0)
             {
-        		$NewFile = New-Item -ItemType File -Name $CSV_File_Secret	
+        	$NewFile = New-Item -ItemType File -Name $CSV_File_Secret	
                 $Soon_Expired_Secret | export-csv $CSV_File_Secret -notype -Delimiter ";"
                 $attachmentmessage = [Convert]::ToBase64String([IO.File]::ReadAllBytes($CSV_File_Secret))
                 $attachmentname = (Get-Item -Path $CSV_File_Secret).Name
@@ -136,12 +136,12 @@ If($Send_Mail -eq $True)
 
          If($Soon_Expired_Certificate_Count -gt 0)
             {
-        		$NewFile = New-Item -ItemType File -Name $CSV_File_Certificate
+        	$NewFile = New-Item -ItemType File -Name $CSV_File_Certificate
                 $Soon_Expired_Certificate | export-csv $CSV_File_Certificate -notype -Delimiter ";"
                 $attachmentmessage = [Convert]::ToBase64String([IO.File]::ReadAllBytes($CSV_File_Certificate))
                 $attachmentname = (Get-Item -Path $CSV_File_Certificate).Name
 
-                $Notif_Title_Certificate = $Notif_Message_Certificate + " ($Soon_Expired_Certificate_Count app certificates)"
+                $Notif_Title_Certificate = $Notif_Title_Certificate + " ($Soon_Expired_Certificate_Count app certificates)"
 
                 $params = @{
                     Message         = @{
