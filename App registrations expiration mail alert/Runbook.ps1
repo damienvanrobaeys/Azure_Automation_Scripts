@@ -9,8 +9,8 @@ $CSV_File_Certificate = "Azure app certificate expiration.csv"
 $Notif_Title_Secret = "Azure applications with secret that soon expired"
 $Notif_Message_Secret = "Here is the list of Azure applications with secret that soon expired"
 
-$Notif_Title_Certificate = "Azure applications with certificate that soon expired"
-$Notif_Message_Certificate = "Here is the list of Azure applications with certificate that soon expired"
+$Notif_Title_Certificate = "Azure app registrations with certificate that soon expired"
+$Notif_Message_Certificate = "Here is the list of Azure app registrations with certificate that soon expired"
 
 $url = $env:IDENTITY_ENDPOINT  
 $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]" 
@@ -110,7 +110,7 @@ ForEach($App in $Apps_With_Credentials)
 
 If($Send_Mail -eq $True)
     {
-		Connect-MgGraph -Identity | out-null
+	Connect-MgGraph -Identity | out-null
 		
         $Soon_Expired_Secret = $Array_secret | where {$_."Secret state" -eq "Not expired" -and $_."Days before expiration" -le 90} | select "Application name", "Created on", "Secret name", "Secret name","Secret end date", "Days before expiration"
         $Soon_Expired_Certificate = $Array_certificate | where {$_."Certificate state" -eq "Not expired" -and $_."Days before expiration" -le 90} | select "Application name","Created on", "Certificate name","Certificate end date", "Days before expiration"
@@ -120,7 +120,7 @@ If($Send_Mail -eq $True)
 
         If($Soon_Expired_Secret_Count -gt 0)
             {
-        		$NewFile = New-Item -ItemType File -Name $CSV_File_Secret	
+        	$NewFile = New-Item -ItemType File -Name $CSV_File_Secret	
                 $Soon_Expired_Secret | export-csv $CSV_File_Secret -notype -Delimiter ";"
                 $attachmentmessage = [Convert]::ToBase64String([IO.File]::ReadAllBytes($CSV_File_Secret))
                 $attachmentname = (Get-Item -Path $CSV_File_Secret).Name
@@ -160,12 +160,12 @@ If($Send_Mail -eq $True)
 
          If($Soon_Expired_Certificate_Count -gt 0)
             {
-        		$NewFile = New-Item -ItemType File -Name $CSV_File_Certificate
+        	$NewFile = New-Item -ItemType File -Name $CSV_File_Certificate
                 $Soon_Expired_Certificate | export-csv $CSV_File_Certificate -notype -Delimiter ";"
                 $attachmentmessage = [Convert]::ToBase64String([IO.File]::ReadAllBytes($CSV_File_Certificate))
                 $attachmentname = (Get-Item -Path $CSV_File_Certificate).Name
 
-                $Notif_Title_Certificate = $Notif_Message_Certificate + " ($Soon_Expired_Certificate_Count app certificates)"
+                $Notif_Title_Certificate = $Notif_Title_Certificate + " ($Soon_Expired_Certificate_Count app certificates)"
 
                 $params = @{
                     Message         = @{
