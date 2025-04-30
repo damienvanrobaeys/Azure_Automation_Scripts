@@ -6,11 +6,11 @@ $CSV_File_Secret = "Azure app secret expiration.csv"
 $CSV_File_Certificate = "Azure app certificate expiration.csv"
 
 # Notif content
-$Notif_Title_Secret = "Azure applications with secret that soon expired"
-$Notif_Message_Secret = "Here is the list of Azure applications with secret that soon expired"
+$Notif_Title_Secret = "Azure app registrations with secret that soon expired"
+$Notif_Message_Secret = "Here is the list of Azure app registrations with secret that soon expired"
 
-$Notif_Title_Certificate = "Azure applications with certificate that soon expired"
-$Notif_Message_Certificate = "Here is the list of Azure applications with certificate that soon expired"
+$Notif_Title_Certificate = "Azure app registrations with certificate that soon expired"
+$Notif_Message_Certificate = "Here is the list of Azure app registrations with certificate that soon expired"
 
 Connect-MgGraph -Identity | out-null
 
