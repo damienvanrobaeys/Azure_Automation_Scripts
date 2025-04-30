@@ -1,3 +1,6 @@
+# Expiration delay
+$Expiration_Delay = 30
+
 # If you want to send a notif by mail
 $Send_Mail = $True # $True or $False
 $Mail_From = ""
@@ -106,14 +109,12 @@ ForEach($App in $Apps_With_Credentials)
 	}
 }
 
-#$Array_certificate | where {$_."Certificate state" -eq "Not expired" -and $_."Days before expiration" -le 90}
-
 If($Send_Mail -eq $True)
     {
 	Connect-MgGraph -Identity | out-null
 		
-        $Soon_Expired_Secret = $Array_secret | where {$_."Secret state" -eq "Not expired" -and $_."Days before expiration" -le 90} | select "Application name", "Created on", "Secret name", "Secret name","Secret end date", "Days before expiration"
-        $Soon_Expired_Certificate = $Array_certificate | where {$_."Certificate state" -eq "Not expired" -and $_."Days before expiration" -le 90} | select "Application name","Created on", "Certificate name","Certificate end date", "Days before expiration"
+        $Soon_Expired_Secret = $Array_secret | where {$_."Secret state" -eq "Not expired" -and $_."Days before expiration" -le $Expiration_Delay} | select "Application name", "Created on", "Secret name", "Secret name","Secret end date", "Days before expiration"
+        $Soon_Expired_Certificate = $Array_certificate | where {$_."Certificate state" -eq "Not expired" -and $_."Days before expiration" -le $Expiration_Delay} | select "Application name","Created on", "Certificate name","Certificate end date", "Days before expiration"
 
         $Soon_Expired_Secret_Count = $Soon_Expired_Secret.count
         $Soon_Expired_Certificate_Count = $Soon_Expired_Certificate.count
