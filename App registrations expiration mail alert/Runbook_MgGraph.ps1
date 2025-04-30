@@ -1,3 +1,6 @@
+# Expiration delay
+$Expiration_Delay = 90
+
 # If you want to send a notif by mail
 $Send_Mail = $True # $True or $False
 $Mail_From = ""
@@ -88,8 +91,8 @@ ForEach($App in $Apps_With_Credentials)
 	}
 }
 
-$Soon_Expired_Secret = $Array_secret | where {$_."Secret state" -eq "Not expired" -and $_."Days before expiration" -le 90}
-$Soon_Expired_Certificate = $Array_certificate | where {$_."Certificate state" -eq "Not expired" -and $_."Days before expiration" -le 90}
+$Soon_Expired_Secret = $Array_secret | where {$_."Secret state" -eq "Not expired" -and $_."Days before expiration" -le $Expiration_Delay}
+$Soon_Expired_Certificate = $Array_certificate | where {$_."Certificate state" -eq "Not expired" -and $_."Days before expiration" -le $Expiration_Delay}
 
 $Soon_Expired_Secret_Count = $Soon_Expired_Secret.count
 $Soon_Expired_Certificate_Count = $Soon_Expired_Certificate.count
