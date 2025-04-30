@@ -1,5 +1,5 @@
 # Expiration delay
-$Expiration_Delay = 30
+$Expiration_Delay = 90
 
 # If you want to send a notif by mail
 $Send_Mail = $True # $True or $False
