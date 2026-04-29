@@ -10,9 +10,9 @@ New-MgGroupMember: Microsoft.Graph.Groups
 
 # Fill the variable 
 # Target group where to add devices
-$Target_Group_ID = "75b2f518-4007-4f60-8ae3-9db3bf247813" 
+$Target_Group_ID = "" 
 # Intune remediation script ID
-$Remediation_Script_ID = "dca4d52f-78bb-4333-996a-a8b9f963b0ea" 
+$Remediation_Script_ID = "" 
 
 # Function to add devices with registry key to the target Entra ID group
 Function Add_Devices
