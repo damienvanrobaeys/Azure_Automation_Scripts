@@ -1,4 +1,6 @@
+# Change the registry path here (it's just an example)
 $Registry_Key = "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\Servicing"
+# Change the registry value here (it's just an example)
 $Registry_Key_Value = (Get-ItemProperty -Path $Registry_Key -Name "UEFICA2023Status" -ErrorAction SilentlyContinue).UEFICA2023Status
 If($Registry_Key_Value -eq "Updated")
 {
